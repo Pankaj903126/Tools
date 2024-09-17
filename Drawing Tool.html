@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Tool</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        .tool {
+            margin: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background-color: #444;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .color-picker {
+            margin: 10px;
+        }
+
+        #canvas {
+            border: 1px solid #ddd;
+        }
+
+        #eraser-canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="canvas" width="800" height="600"></canvas>
+        <canvas id="eraser-canvas" width="800" height="600"></canvas>
+        <div class="toolbar">
+            <button class="tool" id="pencil">Pencil</button>
+            <button class="tool" id="eraser">Eraser</button>
+            <button class="tool" id="clear">Clear</button>
+            <div class="color-picker">
+                <input type="color" id="color-picker" value="#000000">
+            </div>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const eraserCanvas = document.getElementById('eraser-canvas');
+        const ctx = canvas.getContext('2d');
+        const eraserCtx = eraserCanvas.getContext('2d');
+        const toolbar = document.querySelector('.toolbar');
+        const pencilButton = document.getElementById('pencil');
+        const eraserButton = document.getElementById('eraser');
+        const clearButton = document.getElementById('clear');
+        const colorPicker = document.getElementById('color-picker');
+
+        let drawing = false;
+        let lastX, lastY;
+        let color = '#000000';
+        let drawingTool = 'pencil';
+        let speed, pressure;
+
+        // Set up event listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+
+        pencilButton.addEventListener('click', () => {
+            drawingTool = 'pencil';
+        });
+
+        eraserButton.addEventListener('click', () => {
+            drawingTool = 'eraser';
+        });
+
+        clearButton.addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            eraserCtx.clearRect(0, 0, eraserCanvas.width, eraserCanvas.height);
+        });
+
+        colorPicker.addEventListener('input', () => {
+            color = colorPicker.value;
+        });
+
+        // Drawing functions
+        function getTouchCoordinates(event) {
+            if (event.touches) {
+                return {
+                    x: event.touches[0].clientX,
+                    y: event.touches[0].clientY
+                };
+            } else {
+                return {
+                    x: event.clientX,
+                    y: event.clientY
+                };
+            }
+        }
+
+        function calculateLineWidth(speed, pressure) {
+            // Simulate pencil bending by varying line width and opacity
+            return Math.max(1, speed * pressure);
+        }
+
+        function drawPencil(x, y) {
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.bezierCurveTo(x, y, x, y, x, y);
+            ctx.lineWidth = calculateLineWidth(speed, pressure);
+            ctx.strokeStyle = color;
+            ctx.stroke();
+            lastX = x;
+            lastY = y;
+        }
+
+        function drawEraser(x, y) {
+            eraserCtx.beginPath();
+            eraserCtx.moveTo(lastX, lastY);
+            eraserCtx.lineTo(x, y);
+            eraserCtx.lineWidth = 10;
+            eraserCtx.strokeStyle = 'white';
+            eraserCtx.stroke();
+            lastX = x;
+            lastY = y;
+        }
+
+        function erase() {
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.drawImage(eraserCanvas, 0, 0);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function startDrawing(event) {
+            drawing = true;
+            const { x, y } = getTouchCoordinates(event);
+            lastX = x;
+            lastY = y;
+            speed = 1;
+            pressure = 1;
+        }
+
+        function draw(event) {
+            if (drawing) {
+                const { x, y } = getTouchCoordinates(event);
+                if (drawingTool === 'pencil') {
+                    drawPencil(x, y);
+                } else if (drawingTool === 'eraser') {
+                    drawEraser(x, y);
+                    erase();
+                }
+                lastX = x;
+                lastY = y;
+            }
+        }
+
+        function stopDrawing() {
+            drawing = false;
+        }
+    </script>
+</body>
+                  </html>
